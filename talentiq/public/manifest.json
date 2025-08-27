@@ -1,0 +1,14 @@
+{
+  "name": "TalentIQ",
+  "short_name": "TalentIQ",
+  "description": "AI-driven HR recruitment platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111827",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+

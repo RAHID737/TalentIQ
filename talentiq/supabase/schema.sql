@@ -62,6 +62,24 @@ create table if not exists public.applications (
   unique (job_id, candidate_id)
 );
 
+-- Audit logs
+create table if not exists public.audit_logs (
+  id bigserial primary key,
+  organization_id uuid references public.organizations(id) on delete cascade,
+  actor_id uuid references public.profiles(id) on delete set null,
+  action text not null,
+  entity text,
+  entity_id text,
+  ip text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.audit_logs enable row level security;
+create policy "tenant isolated read audit" on public.audit_logs
+  for select using (exists (
+    select 1 from public.profiles p where p.id = auth.uid() and p.organization_id = audit_logs.organization_id
+  ));
+
 -- RLS
 alter table public.organizations enable row level security;
 alter table public.profiles enable row level security;
