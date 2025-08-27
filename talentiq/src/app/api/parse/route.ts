@@ -4,7 +4,7 @@ import { supabaseServer } from "@/lib/supabaseServer";
 
 export async function POST(req: NextRequest) {
   try {
-    const { path, provider = "simple" } = await req.json();
+    const { path, provider = "simple" }: { path: string; provider?: string } = await req.json();
     if (!path) return NextResponse.json({ error: "Missing path" }, { status: 400 });
 
     let text: string | null = null;
@@ -24,8 +24,9 @@ export async function POST(req: NextRequest) {
       .single();
     if (insError) return NextResponse.json({ error: insError.message }, { status: 500 });
     return NextResponse.json({ parsed, extracted });
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || "Unexpected error" }, { status: 500 });
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unexpected error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 

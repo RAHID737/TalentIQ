@@ -4,7 +4,7 @@ import { useDropzone } from "react-dropzone";
 import axios from "axios";
 import toast from "react-hot-toast";
 
-export function ResumeDropzone() {
+export function ResumeDropzone({ onUploaded }: { onUploaded?: (path: string) => void }) {
   const [progress, setProgress] = useState<number>(0);
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
@@ -24,12 +24,13 @@ export function ResumeDropzone() {
         },
       });
       toast.success("Uploaded resume");
+      if (onUploaded) onUploaded(data.path as string);
       setProgress(0);
     } catch (_error: unknown) {
       toast.error("Upload failed");
       setProgress(0);
     }
-  }, []);
+  }, [onUploaded]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
