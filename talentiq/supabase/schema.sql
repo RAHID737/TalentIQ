@@ -62,6 +62,41 @@ create table if not exists public.applications (
   unique (job_id, candidate_id)
 );
 
+-- Parsed resumes
+create table if not exists public.parsed_resumes (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  candidate_id uuid references public.candidates(id) on delete cascade,
+  file_path text not null,
+  provider text not null,
+  raw jsonb not null,
+  extracted jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+-- Scoring history
+create table if not exists public.scoring_history (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  job_id uuid not null references public.jobs(id) on delete cascade,
+  candidate_id uuid not null references public.candidates(id) on delete cascade,
+  score numeric not null,
+  breakdown jsonb not null,
+  weights jsonb not null,
+  created_at timestamptz not null default now()
+);
+
+-- Saved filter presets
+create table if not exists public.filter_presets (
+  id uuid primary key default gen_random_uuid(),
+  organization_id uuid not null references public.organizations(id) on delete cascade,
+  owner_id uuid references public.profiles(id) on delete set null,
+  name text not null,
+  query jsonb not null,
+  is_shared boolean default false,
+  created_at timestamptz not null default now()
+);
+
 -- Audit logs
 create table if not exists public.audit_logs (
   id bigserial primary key,
@@ -86,6 +121,9 @@ alter table public.profiles enable row level security;
 alter table public.jobs enable row level security;
 alter table public.candidates enable row level security;
 alter table public.applications enable row level security;
+alter table public.parsed_resumes enable row level security;
+alter table public.scoring_history enable row level security;
+alter table public.filter_presets enable row level security;
 
 create policy "profiles are viewable by user" on public.profiles
   for select using (auth.uid() = id);
@@ -111,5 +149,35 @@ create policy "tenant isolated read candidates" on public.candidates
 create policy "tenant isolated read applications" on public.applications
   for select using (exists (
     select 1 from public.profiles p where p.id = auth.uid() and p.organization_id = applications.organization_id
+  ));
+
+create policy "tenant isolated read parsed" on public.parsed_resumes
+  for select using (exists (
+    select 1 from public.profiles p where p.id = auth.uid() and p.organization_id = parsed_resumes.organization_id
+  ));
+
+create policy "tenant isolated write parsed" on public.parsed_resumes
+  for insert with check (exists (
+    select 1 from public.profiles p where p.id = auth.uid() and p.organization_id = organization_id
+  ));
+
+create policy "tenant isolated read scoring" on public.scoring_history
+  for select using (exists (
+    select 1 from public.profiles p where p.id = auth.uid() and p.organization_id = scoring_history.organization_id
+  ));
+
+create policy "tenant isolated write scoring" on public.scoring_history
+  for insert with check (exists (
+    select 1 from public.profiles p where p.id = auth.uid() and p.organization_id = organization_id
+  ));
+
+create policy "tenant isolated read presets" on public.filter_presets
+  for select using (exists (
+    select 1 from public.profiles p where p.id = auth.uid() and p.organization_id = filter_presets.organization_id
+  ));
+
+create policy "tenant isolated write presets" on public.filter_presets
+  for insert with check (exists (
+    select 1 from public.profiles p where p.id = auth.uid() and p.organization_id = organization_id
   ));
 
